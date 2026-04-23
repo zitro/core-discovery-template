@@ -10,8 +10,3 @@ The directory is mounted read-only into the backend container at
 
 See the framework docs for the full extension contract:
 https://github.com/zitro/core-framework/blob/master/docs/EXTENSIONS.md
-# extensions
-
-Drop `*.py` plugin modules here. Each module exposes a `register(app, settings)` function called at backend startup.
-
-See https://github.com/zitro/core-framework/blob/master/docs/EXTENSIONS.md for the contract.
