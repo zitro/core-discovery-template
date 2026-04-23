@@ -8,7 +8,7 @@
 
 services:
   backend:
-    image: ghcr.io/zitro/core-framework-backend:2.2.8
+    image: ghcr.io/zitro/core-framework-backend:2.2.9
     container_name: core-backend
     restart: unless-stopped
     env_file:
@@ -41,7 +41,7 @@ services:
       start_period: 15s
 
   frontend:
-    image: ghcr.io/zitro/core-framework-frontend:2.2.8
+    image: ghcr.io/zitro/core-framework-frontend:2.2.9
     container_name: core-frontend
     restart: unless-stopped
     depends_on:
