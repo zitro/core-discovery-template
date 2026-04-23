@@ -1,10 +1,17 @@
 # data + secrets
 .env
+.env.*
+!.env.example
 data/
 projects/*/storage/
+secrets/
+*.secret
+*.key
+*.pem
+*.local
 
 # OS / editor cruft
 .DS_Store
 Thumbs.db
-.vscode/
+.vscode/settings.json
 .idea/
