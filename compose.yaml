@@ -1,0 +1,63 @@
+# CORE Discovery -- local dev compose
+#
+# Pulls signed framework images from GHCR. No framework source lives in
+# this repo -- only the deploy config, project content, and customizations.
+#
+# Pin image tags to a specific framework version. Renovate watches both
+# tags (see renovate.json) and opens PRs when newer releases ship.
+
+services:
+  backend:
+    image: ghcr.io/zitro/core-framework-backend:2.2.1
+    container_name: core-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PROJECTS_ROOT: /data/projects
+      LOCAL_STORAGE_PATH: /data/storage
+      EXTENSIONS_DIR: /data/extensions
+      CUSTOMERS_WORKSPACE_ROOT: /data/customers
+    volumes:
+      # Source of project content. Override via PROJECTS_SOURCE in .env to
+      # point at a sibling content repo, a plain folder, or any directory
+      # of markdown. Default: ./projects (the local stub directory).
+      # Examples:
+      #   PROJECTS_SOURCE=../my-content-repo            # sibling repo
+      #   PROJECTS_SOURCE=/path/to/content              # absolute host path
+      #   PROJECTS_SOURCE=./projects                    # bundled stub (default)
+      - ${PROJECTS_SOURCE:-./projects}:/data/projects:ro
+      - ./config/prompts:/data/prompts:ro
+      - ./extensions:/data/extensions:ro
+      - backend-storage:/data/storage
+      - customers-workspace:/data/customers
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  frontend:
+    image: ghcr.io/zitro/core-framework-frontend:2.2.1
+    container_name: core-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  backend-storage:
+  customers-workspace:

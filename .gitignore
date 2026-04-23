@@ -1,0 +1,10 @@
+# data + secrets
+.env
+data/
+projects/*/storage/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
