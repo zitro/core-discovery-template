@@ -8,7 +8,7 @@
 
 services:
   backend:
-    image: ghcr.io/zitro/core-framework-backend:2.2.161
+    image: ghcr.io/zitro/core-framework-backend:1.3.0
     container_name: core-backend
     restart: unless-stopped
     env_file:
@@ -29,7 +29,8 @@ services:
       - ${PROJECTS_SOURCE:-./projects}:/data/projects:ro
       - ./config/prompts:/data/prompts:ro
       - ./extensions:/data/extensions:ro
-      - backend-storage:/data/storage
+      # Persist backend state on the host filesystem.
+      - ${LOCAL_DATA_PATH:-./data}:/data/storage
       - customers-workspace:/data/customers
     ports:
       - "8000:8000"
@@ -41,7 +42,7 @@ services:
       start_period: 15s
 
   frontend:
-    image: ghcr.io/zitro/core-framework-frontend:2.2.161
+    image: ghcr.io/zitro/core-framework-frontend:1.3.0
     container_name: core-frontend
     restart: unless-stopped
     depends_on:
@@ -59,5 +60,4 @@ services:
       start_period: 30s
 
 volumes:
-  backend-storage:
   customers-workspace:
