@@ -1,0 +1,87 @@
+name: Template Sync
+
+on:
+  schedule:
+    - cron: "0 12 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      TEMPLATE_REPO: ${{ vars.TEMPLATE_REPO || 'zitro/core-discovery-template' }}
+      TEMPLATE_REF: ${{ vars.TEMPLATE_REF || 'main' }}
+      TEMPLATE_SYNC_PATHS: ${{ vars.TEMPLATE_SYNC_PATHS || '.env.example\ncompose.yaml\nrenovate.json\n.github/workflows/template-sync.yml' }}
+    steps:
+      - name: Skip when running in template source repo
+        if: ${{ github.repository == env.TEMPLATE_REPO }}
+        run: |
+          echo "Repository is the template source ($TEMPLATE_REPO); skipping sync run."
+          exit 0
+
+      - name: Checkout customer repository
+        if: ${{ github.repository != env.TEMPLATE_REPO }}
+        uses: actions/checkout@v4
+        with:
+          path: customer
+
+      - name: Checkout template repository
+        if: ${{ github.repository != env.TEMPLATE_REPO }}
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.TEMPLATE_REPO }}
+          ref: ${{ env.TEMPLATE_REF }}
+          path: template
+
+      - name: Sync configured template files
+        if: ${{ github.repository != env.TEMPLATE_REPO }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Sync source: ${TEMPLATE_REPO}@${TEMPLATE_REF}"
+
+          while IFS= read -r rel_path || [[ -n "$rel_path" ]]; do
+            rel_path="${rel_path//$'\r'/}"
+            [[ -z "$rel_path" ]] && continue
+
+            src="template/${rel_path}"
+            dst="customer/${rel_path}"
+
+            if [[ -f "$src" ]]; then
+              mkdir -p "$(dirname "$dst")"
+              cp "$src" "$dst"
+              echo "synced: $rel_path"
+            else
+              echo "skipped (missing in template): $rel_path"
+            fi
+          done <<< "$TEMPLATE_SYNC_PATHS"
+
+      - name: Create pull request with template updates
+        if: ${{ github.repository != env.TEMPLATE_REPO }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          path: customer
+          branch: chore/template-sync
+          delete-branch: true
+          commit-message: "chore(template): sync from core-discovery-template"
+          title: "chore(template): sync from core-discovery-template"
+          body: |
+            This PR was opened automatically by the template sync workflow.
+
+            Source:
+            - Template repo: `${{ env.TEMPLATE_REPO }}`
+            - Template ref: `${{ env.TEMPLATE_REF }}`
+
+            Synced paths:
+            ```text
+            ${{ env.TEMPLATE_SYNC_PATHS }}
+            ```
+
+            Please review and merge when ready.
+          labels: |
+            dependencies
+            template-sync
